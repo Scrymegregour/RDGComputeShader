@@ -18,18 +18,14 @@ void DesaturateSceneView::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuil
 
 	Inputs.Validate();
 
-	FScreenPassTexture SceneColor((*Inputs.SceneTextures)->SceneColorTexture, Viewport);
+	FRDGTextureRef SceneColor = (*Inputs.SceneTextures)->SceneColorTexture;
 
-	if (!SceneColor.IsValid())
+	if (!SceneColor)
 	{
 		return;
 	}
 
-	FRDGTextureDesc InputDesc = SceneColor.Texture->Desc;
-	InputDesc.Reset();
-	InputDesc.Flags |= TexCreate_UAV | TexCreate_ShaderResource;
-
-	FRDGTextureRef InputCopy = GraphBuilder.CreateTexture(InputDesc, TEXT("DesaturateInput"));
+	FRDGTextureRef InputCopy = GraphBuilder.CreateTexture(SceneColor->Desc, TEXT("DesaturateInput"));
 	FRDGTextureUAVRef SceneColorUAV = GraphBuilder.CreateUAV(SceneColor.Texture);
 	
 	check(InputCopy);
@@ -49,7 +45,7 @@ void DesaturateSceneView::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuil
 		FMath::DivideAndRoundUp(Resolution.Y, 8),
 		1);
 
-	AddCopyTexturePass(GraphBuilder, SceneColor.Texture, InputCopy);
+	AddCopyTexturePass(GraphBuilder, SceneColor, InputCopy);
 
 	FComputeShaderUtils::AddPass(
 		GraphBuilder,
